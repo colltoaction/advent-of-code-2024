@@ -1,30 +1,44 @@
 from itertools import pairwise, product
-from discopy.frobenius import *
+from discopy.frobenius import Ty, Box, Functor, Category
 from discopy import python
 
+def fmap(box):
+    return box @ l >> _map
+
 t = Ty("")
+l = Ty("list")
+f = Ty("function")
 e = Ty()
-_map = Box('map', t @ t, t)
-_mapmap = Box('mapmap', t @ t, t)
-splitlines = Box('splitlines', e, t)
-split = Box('split', e, t)
-_readlines = Box('readlines', t, t)
-_sorted = Box('sorted', t, t)
-_subtract = Box('-', e, t)
-_count = Box('count', t, t)
-_sum = Box('sum', t, t)
-_zip = Box('zip', t @ t, t)
-_filter = Box('filter', t @ t, t)
-_add = Box('add', e, t)
-_abs = Box('abs', e, t)
-_any = Box('any', e, t)
-_len = Box('len', e, t)
-_int = Box('int', e, t)
-split_two = Box('split_two', t, t @ t)
-split_mul = Box('split_mul', t, t)
-similarity = Box('similarity', t @ t, t)
-safe = Box('safe', e, t)
-dampened_safe = Box('dampened_safe', e, t)
+_map = Box('map', f @ l, l)
+_mapmap = Box('lambda a,b: (list(map(a,x)) for x in b)', f @ l, l)
+_splitlines = Box('lambda a: a.splitlines()', e, f)
+_split = Box('str.split', e, f)
+_readlines = Box('list', t, l)
+_list = Box('list', e, f)
+_to_list = Box('list', l, l)
+_open = Box('open', t, t)
+_read = Box('lambda a: a.read()', t, t)
+_sorted = Box('sorted', l, l)
+_subtract = Box('lambda a: a[0]-a[1]', e, f)
+_or = Box('lambda a,b: lambda c: a(c) or b(c)', f @ f, f)
+_equal = Box('lambda a: a[0]==a[1]', e, f)
+_count = Box('lambda a: sum(1 for x in a)', l, t)
+_sum = Box('sum', l, t)
+_zip = Box('zip', l @ l, l)
+_filter = Box('filter', f @ l, l)
+_pairwise = Box('pairwise', e, f)
+_first = Box('lambda a: a[0]', e, f)
+_add = Box('add', e, f)
+_abs = Box('abs', e, f)
+_any = Box('any', e, f)
+_len = Box('len', e, f)
+_int = Box('int', e, f)
+_transpose = Box('lambda a: tuple(map(list, zip(*a)))', l, l @ l)
+_product = Box('product', l @ l, l)
+_increasing = Box('lambda c: all(1<=b-a<=3 for a,b in c)', e, f)
+_decreasing = Box('lambda c: all(1<=a-b<=3 for a,b in c)', e, f)
+_safe = _increasing @ _decreasing >> _or
+_dampened_safe = Box('dampened_safe_f', e, f)
 
 def increasing(c):
     return all(1<=b-a<=3 for a,b in pairwise(c))
@@ -43,34 +57,11 @@ def dampened_safe_f(c):
             increasing(c[:i]+c[i+1:])
             or decreasing(c[:i]+c[i+1:])
             for i in range(len(c)))
-            
-def fmap(box):
-    return box @ t >> _map
 
-F = Functor(
+
+EVAL = Functor(
     lambda ob: ob,
-    {
-        _map: lambda a,b: list(map(a,b)),
-        _mapmap: lambda a,b: list(list(map(a,x)) for x in b),
-        _readlines: lambda a: open(a).readlines(),
-        splitlines: lambda: lambda a: a.splitlines(),
-        split: lambda: lambda a: list(a.split()),
-        _sorted: lambda a: list(sorted(a)),
-        _subtract: lambda: lambda a: a[0]-a[1],
-        _int: lambda: int,
-        _any: lambda: any,
-        _len: lambda: len,
-        _abs: lambda: abs,
-        _count: lambda a: sum(1 for x in a),
-        _sum: sum,
-        _filter: lambda a,b: list(filter(a,b)),
-        _zip: lambda a,b: list(zip(a,b)),
-        split_two: lambda a: (
-            [x.split()[0] for x in a],
-            [x.split()[1] for x in a], ),
-        similarity: lambda a, b: list(
-            x for y in b for x in a if x==y),
-        safe: lambda: safe_f,
-        dampened_safe: lambda: dampened_safe_f,
-    },
+    lambda ar: lambda *a:
+        eval(ar.name)(*a) if a
+        else eval(ar.name),
     cod=Category(python.Ty, python.Function))
