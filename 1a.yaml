@@ -1,0 +1,13 @@
+? !map
+  ? !str.split {}
+  ? !open
+  : !list
+: ? !transpose
+  : ? !map
+      ? !sub {}
+      ? !map { !int {}, ? }
+      : !sorted
+      ? !map { !int {}, ? }
+      : !sorted
+    : ? !map { !abs {}, ? }
+      : !sum

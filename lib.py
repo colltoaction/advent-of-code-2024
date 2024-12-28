@@ -1,4 +1,5 @@
 from itertools import pairwise, product
+from operator import sub, call
 from discopy.frobenius import Ty, Box, Functor, Category
 from discopy import python
 
@@ -10,6 +11,7 @@ l = Ty("list")
 f = Ty("function")
 e = Ty()
 _map = Box('map', f @ l, l)
+_map_two = Box('map', f @ l @ l, l)
 _mapmap = Box('lambda a,b: (list(map(a,x)) for x in b)', f @ l, l)
 _splitlines = Box('lambda a: a.splitlines()', e, f)
 _split = Box('str.split', e, f)
@@ -19,7 +21,8 @@ _to_list = Box('list', l, l)
 _open = Box('open', t, t)
 _read = Box('lambda a: a.read()', t, t)
 _sorted = Box('sorted', l, l)
-_subtract = Box('lambda a: a[0]-a[1]', e, f)
+_call = Box('call', f, f @ l)
+_sub = Box('sub', e, f)
 _or = Box('lambda a,b: lambda c: a(c) or b(c)', f @ f, f)
 _equal = Box('lambda a: a[0]==a[1]', e, f)
 _count = Box('lambda a: sum(1 for x in a)', l, t)
@@ -33,12 +36,15 @@ _abs = Box('abs', e, f)
 _any = Box('any', e, f)
 _len = Box('len', e, f)
 _int = Box('int', e, f)
-_transpose = Box('lambda a: tuple(map(list, zip(*a)))', l, l @ l)
+_transpose = Box('transpose', l, l @ l)
 _product = Box('product', l @ l, l)
 _increasing = Box('lambda c: all(1<=b-a<=3 for a,b in c)', e, f)
 _decreasing = Box('lambda c: all(1<=a-b<=3 for a,b in c)', e, f)
 _safe = _increasing @ _decreasing >> _or
 _dampened_safe = Box('dampened_safe_f', e, f)
+
+def transpose(a):
+    return tuple(map(list, zip(*a)))
 
 def increasing(c):
     return all(1<=b-a<=3 for a,b in pairwise(c))
